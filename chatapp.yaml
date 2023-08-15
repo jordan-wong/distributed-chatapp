@@ -1,0 +1,133 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatapp-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatapp-backend
+  template:
+    metadata:
+      labels:
+        app: chatapp-backend
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+      - name: chatapp-backend
+        image: ${my-backend-image}
+        ports:
+        - containerPort: 4222
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 400m
+            memory: 512Mi
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatapp-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatapp-frontend
+  template:
+    metadata:
+      labels:
+        app: chatapp-frontend
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+      - name: chatapp-frontend
+        image: ${my-frontend-image}
+        ports:
+        - containerPort: 4222
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+      - name: redis
+        image: ${my-redis-image}
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatapp-frontend
+spec:
+  type: NodePort
+  selector:
+    app: chatapp-frontend
+  ports:
+  - name: http
+    port: 4222
+    targetPort: 4222
+    nodePort: 30222
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+  - name: tcp
+    port: 6379
+    targetPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatapp-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: chatapp-backend
+  ports:
+  - name: tcp
+    port: 14222
+    targetPort: 14222
+---
